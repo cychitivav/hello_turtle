@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- Turtlesim node start -->
+    <node name="myTurtle" pkg="turtlesim" type="turtlesim_node"/>
+
+    <!-- Node python scripts -->
+    <node name="myTeleop" pkg="hello_turtle" type="myTeleopKey.py" output="screen"/>
+</launch>
