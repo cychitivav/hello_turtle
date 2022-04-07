@@ -27,18 +27,22 @@ class myKeyboard():
     def onPress(self, key):
         self.keysPressed.add(key) # Add key to the set of keys pressed
         print("\033[A")  # Print especial character to erase key pressed
+
+        lin = 0 # Accumulate linear and angular velocities
+        ang = 0
         
         if KeyCode.from_char('w') in self.keysPressed: # Ifs to move the turtle in the desired direction
-            self.pubVel(1,0)
+            lin += 1
 
         if KeyCode.from_char('s') in self.keysPressed:
-            self.pubVel(-1,0)
+            lin -= 1 
 
         if KeyCode.from_char('a') in self.keysPressed:
-            self.pubVel(0,np.pi/2)
+            ang += np.pi/2
 
         if KeyCode.from_char('d') in self.keysPressed:
-            self.pubVel(0,-np.pi/2)
+            ang -= np.pi/2
+        self.pubVel(lin,ang) # Publish the velocity
 
         if Key.space in self.keysPressed: # When this key is pressed, call the ros services to teleport the turtle
             try:
@@ -73,8 +77,24 @@ class myKeyboard():
 
     def onRelease(self, key): # When a key is released, remove it from the set of keys pressed and stop the turtle
         self.keysPressed.remove(key)
-        if not rospy.is_shutdown():
+        if self.keysPressed == set():
             self.pubVel(0, 0)
+        else: # Else to move the turtle when a key is released(simultaneous motion)
+            lin = 0
+            ang = 0
+            
+            if KeyCode.from_char('w') in self.keysPressed: # Ifs to move the turtle in the desired direction
+                lin += 1
+
+            if KeyCode.from_char('s') in self.keysPressed:
+                lin -= 1 
+
+            if KeyCode.from_char('a') in self.keysPressed:
+                ang += np.pi/2
+
+            if KeyCode.from_char('d') in self.keysPressed:
+                ang -= np.pi/2
+            self.pubVel(lin,ang)
 
     def pubVel(self, linear, angular): # Function to publish the velocity to the turtle
         pub = rospy.Publisher('/turtle1/cmd_vel', Twist, queue_size=10)
