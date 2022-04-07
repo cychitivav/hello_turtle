@@ -1,0 +1,9 @@
+# VSCode trash
+.vscode
+.vs
+
+# MATLAB files
+*.asv
+
+# Temp files
+tmpCmd
