@@ -1,54 +1,83 @@
 # Hello turtle package
-In this repository is the development of the firs laboratory guide for robotics class at Universidad Nacional de Colombia.
-For this practice we use ROS(Rootic Operative System), Ubuntu 20.04 , MATLAB and PYTHON.
+In this repository is the development of the first laboratory guide for robotics subject at the Universidad Nacional Colombia.
 
-Primero buscamos trabajar MATLAB junto con ROS, para ello primero se abrio una terminal en la cual se escribio el comando: 
+### Requirements
+* ROS Noetic
+* Turtlesim package (Pre-installed with ROS)
+* ROS toolbox for MATLAB
+* Pynput libray for python (`pip install pynput` or `pip3 install pynput`)
+* Numpy libray (optional)
 
-roscore------Para correr el nodo maestro
+> If you don't want to use *numpy*, change **np.pi** of [teleop file](scripts/myTeleopKey.py) to 3.1415...
 
-Luego se abrio otra terminal en la cual se ingreso el comando:
+## MATLAB-ROS connection
+In the first part of the lab, the MATLAB ROS toolbox is used to become familiar with the connection between MATLAB and ROS. Initially a subscriber to the pose topic is created to view the current pose of the turtle (turtlesim package). Also, to implement MATLAB's connection to ROS services, the teleport_relative service is called to move the turtle to any position.
 
-rosrun turtlesim turtlesim node
+### Execution
+Open two terminals and run the following commands:
 
-Comando que abre el nodo de la tortuga para luego  hacer la conexión con MATLAB, para ello dentro de un script de MATLAB se escribio el sigueinte codigo:
+#### First terminal
+Run master node
+```bash
+roscore
+```
 
-%Inicio del codigo
-rosinit; 
-velPub = rospublisher(’/turtle1/cmd_vel’,’geometry_msgs/Twist’); 
-velMsg = rosmessage(velPub); 
-velMsg.Linear.X = 1; 
-send(velPub,velMsg); 
-pause(1)
-%Fin del codigo
+#### Second terminal
+Run turtlesim node
+```bash
+rosrun turtlesim turtlesim_node
+```
 
-En el codigo anterior se hace la conexion con el nodo maestro, luego se crea el publicador y el mensaje para posteriormente dar un valor al mensaje y luego enviarlo.
+And finally, run this in MATLAB command window
+```MATLAB
+run matlab/matlab_ros_connection.m
+run matlab/matlab_rossubs.m
+run matlab/matlab_rossrv.m
+```
 
-Luego se creo un script en MATLAB para suscribirse al tipico de pose se la simulación, para ello se hizo uso del comando:
+In the [matlab ros connector file](matlab/matlab_ros_connection.m) we created a script that connects MATLAB to ROS and create a publisher to send **Twist** message by the topic *cmd_vel*. The second script contains the code to create a subscriber to the topic *pose* and to get the current pose of the turtle(latest message). Finally, the third script contains the code to create a service client to call the service *teleport_absolute* and to send the message to move the turtle to a new position; in this script is the command *rosshutdown* to close the connection with ROS.
 
-subPose= rossubscriber(TOPICNAME,MESSAGETYPE)
+![rosgraph](https://user-images.githubusercontent.com/30636259/162367660-2223aec7-2e35-4fba-a196-95d00c1cc6dc.png)
 
-Y para finalizar se creo un ultimo script de MATLAB para poder enviar los valores asociados a la pose de la tortuga:
+## Python keyboard control
+AIn order to practice the commands to create publishers, subscribers and services from python, a script was created to move the turtle of the turtlesim node using the keyboard. To achieve this we used the _pynput_ library and optionally the _numpy_ library to rotate the turtle exactly pi radians.
 
-rclt = rossvcclient("/turtle1/teleport_absolute")
-waitForServer(rclt); 
-% Creacion del mensaje:
-rqtMsg = rosmessage(rclt) 
-rqtMsg.X = 10; 
-rqtMsg.Y = 5;
-% se envia requerimiento y esperamos respuesta
-response = call(rclt,rqtMsg) 
+### Execution
+Open three terminals and run the following commands:
 
+#### First terminal
+~~~bash
+roscore
+~~~
 
-Ahora vamos usar PYTHON para realizar un procedimiento similar:
+#### Second terminal
+~~~bash
+rosrun turtlesim turtlesim_node
+~~~
 
-Primeramente se creo un script llamado myTeleopKey.py en el cual realizamos un codigo que nos permitiera operar la tortuga haciendo uso del teclado con la siguientes indicaciones:
+#### Third terminal
+~~~bash
+rosrun hello_turtle myTeleopKey.py
+~~~
 
--Adelante presionando la tecla W
+> Note: Don't forget source devel/setup.bash
 
--Atras presionando la tecla S
+### Controls
+To move the turtle from the terminal use the following keys:
 
--Rotación sentido horario presionando la tecla D
+    * w: move forward
+    * a: rotate left
+    * s: move backward
+    * d: rotate right
 
--Rotación sentido antihorario presionando la tecla A
+    * Space: Rotate turtle
+    * r: Reset position
 
-Para ello se uso la clase myKeyboard()  en la que se definieron las funiones que nos permiten que al presionar una tecla, la tortuga haga la accion determinada.
+> Note: You must have focused the terminal where the myTeleopKey.py node is running
+
+### Roslaunch
+To run all nodes with a only command we created a [launch file](launch/runKeyTeleop.launch). To run this launch file we used the following command:
+
+```bash
+roslaunch hello_turtle runKeyTeleop.launch 
+```
