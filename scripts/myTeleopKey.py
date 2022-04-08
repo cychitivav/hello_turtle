@@ -1,102 +1,86 @@
-import rospy # ROS libraries
+import rospy  # ROS libraries
 from geometry_msgs.msg import Twist
 from turtlesim.srv import TeleportRelative, TeleportAbsolute
 from std_srvs.srv import Empty
-from pynput.keyboard import Key, Listener, KeyCode # Libraries for keyboard input
+from pynput.keyboard import Key, Listener, KeyCode  # Libraries for keyboard input
 import numpy as np
 
 
-class myKeyboard(): 
+class myKeyboard():
     def __init__(self):
-        self.COMBINATION_STOP = {Key.ctrl, KeyCode.from_char('c')} # Combination to stop the program
-        self.keysPressed = set() # Var to store the keys pressed
+        self.keysPressed = set()  # Var to store the keys pressed
 
-        with Listener(on_press=self.onPress, on_release=self.onRelease) as self.listener: # Listener to listen for keyboard input
-            welcome = """\nControls:
-            * w: move forward
-            * a: rotate left
-            * s: move backward
-            * d: rotate right
+        # Listener to listen for keyboard input
+        listener = Listener(on_press=self.onPress, on_release=self.onRelease)
+        welcome = """\nControls:
+        * w: move forward
+        * a: rotate left
+        * s: move backward
+        * d: rotate right
 
-            * Space: Rotate turtle
-            * r: Reset position"""
+        * Space: Rotate turtle
+        * r: Reset position"""
 
-            rospy.loginfo(welcome)  # Show welcome message
-            self.listener.join()  # Start listening for key presses
+        rospy.loginfo(welcome)  # Show welcome message
+        listener.start()  # Start listening for key presses
 
-    def onPress(self, key):
-        self.keysPressed.add(key) # Add key to the set of keys pressed
-        print("\033[A")  # Print especial character to erase key pressed
+        rate = rospy.Rate(10)
+        while not rospy.is_shutdown():
+            linear = 0
+            angular = 0
 
-        lin = 0 # Accumulate linear and angular velocities
-        ang = 0
-        
-        if KeyCode.from_char('w') in self.keysPressed: # Ifs to move the turtle in the desired direction
-            lin += 1
-
-        if KeyCode.from_char('s') in self.keysPressed:
-            lin -= 1 
-
-        if KeyCode.from_char('a') in self.keysPressed:
-            ang += np.pi/2
-
-        if KeyCode.from_char('d') in self.keysPressed:
-            ang -= np.pi/2
-        self.pubVel(lin,ang) # Publish the velocity
-
-        if Key.space in self.keysPressed: # When this key is pressed, call the ros services to teleport the turtle
-            try:
-                rospy.wait_for_service('/turtle1/teleport_relative') # Wait for the service to be available
-                rotateTurtle = rospy.ServiceProxy(
-                    '/turtle1/teleport_relative', TeleportRelative) # Create handle to call the service
-                moveRsp = rotateTurtle(0, np.pi)
-
-                rospy.loginfo('Turtle rotated')
-            except rospy.ServiceException as e: # If the service is not available, print a warning
-                rospy.logwarn("Service teleport_relative call failed")
-
-        if KeyCode.from_char('r') in self.keysPressed:
-            try:
-                rospy.wait_for_service('/turtle1/teleport_absolute')
-                resetTurtle = rospy.ServiceProxy(
-                    '/turtle1/teleport_absolute', TeleportAbsolute)
-                resetRsp = resetTurtle(6, 6, np.pi)
-
-                rospy.wait_for_service('/clear')
-                clearTraje = rospy.ServiceProxy('/clear', Empty)
-                resetRsp = clearTraje()
-
-                rospy.loginfo('Turtle reset')
-            except rospy.ServiceException as e:
-                rospy.logwarn("Service teleport_absolute call failed")
-
-        if key in self.COMBINATION_STOP: # If the combination to stop the program is pressed, stop the turtle and the keyboard listener
-            if all(k in self.COMBINATION_STOP for k in self.keysPressed):
-                self.listener.stop()
-                rospy.signal_shutdown('Quit')
-
-    def onRelease(self, key): # When a key is released, remove it from the set of keys pressed and stop the turtle
-        self.keysPressed.remove(key)
-        if self.keysPressed == set():
-            self.pubVel(0, 0)
-        else: # Else to move the turtle when a key is released(simultaneous motion)
-            lin = 0
-            ang = 0
-            
-            if KeyCode.from_char('w') in self.keysPressed: # Ifs to move the turtle in the desired direction
-                lin += 1
+            # Ifs to move the turtle in the desired direction
+            if KeyCode.from_char('w') in self.keysPressed:
+                linear += 1
 
             if KeyCode.from_char('s') in self.keysPressed:
-                lin -= 1 
+                linear -= 1
 
             if KeyCode.from_char('a') in self.keysPressed:
-                ang += np.pi/2
+                angular += np.pi/2
 
             if KeyCode.from_char('d') in self.keysPressed:
-                ang -= np.pi/2
-            self.pubVel(lin,ang)
+                angular -= np.pi/2
 
-    def pubVel(self, linear, angular): # Function to publish the velocity to the turtle
+            if Key.space in self.keysPressed:  # When this keys are pressed, call the ros services to teleport the turtle
+                try:
+                    # Wait for the service to be available
+                    rospy.wait_for_service('/turtle1/teleport_relative')
+                    # Create handle to call the service
+                    rotateTurtle = rospy.ServiceProxy(
+                        '/turtle1/teleport_relative', TeleportRelative)
+                    moveRsp = rotateTurtle(0, np.pi)
+
+                    rospy.loginfo('Turtle rotated')
+                except rospy.ServiceException as e:  # If the service is not available, print a warning
+                    rospy.logwarn("Service teleport_relative call failed")
+
+            if KeyCode.from_char('r') in self.keysPressed:
+                try:
+                    rospy.wait_for_service('/turtle1/teleport_absolute')
+                    resetTurtle = rospy.ServiceProxy(
+                        '/turtle1/teleport_absolute', TeleportAbsolute)
+                    resetRsp = resetTurtle(6, 6, np.pi)
+
+                    rospy.wait_for_service('/clear')  # Clear the trajectory
+                    clearTrajec = rospy.ServiceProxy('/clear', Empty)
+                    resetRsp = clearTrajec()
+
+                    rospy.loginfo('Turtle reset')
+                except rospy.ServiceException as e:
+                    rospy.logwarn("Service teleport_absolute call failed")
+
+            self.pubVel(linear, angular)  # Publish the accumulated velocity
+            rate.sleep()
+
+    def onPress(self, key):
+        print("\033[A")  # Print especial character to erase key pressed
+        self.keysPressed.add(key)  # Add key to the set of keys pressed
+
+    def onRelease(self, key):
+        self.keysPressed.remove(key)
+
+    def pubVel(self, linear, angular):  # Function to publish the velocity to the turtle
         pub = rospy.Publisher('/turtle1/cmd_vel', Twist, queue_size=10)
 
         msg = Twist()
@@ -105,8 +89,7 @@ class myKeyboard():
 
         pub.publish(msg)
 
-
-if __name__ == "__main__": 
-    rospy.init_node('TeleopKey', anonymous=False) # Initialize the node and instantiate the class myKeyboard
+if __name__ == "__main__":
+    # Initialize the node and instantiate the class myKeyboard
+    rospy.init_node('TeleopKey', anonymous=False)
     myKeyboard()
-    rospy.spin()
