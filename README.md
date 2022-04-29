@@ -10,6 +10,21 @@ In this repository is the development of the first laboratory guide for robotics
 
 > If you don't want to use *numpy*, change **np.pi** of [teleop file](scripts/myTeleopKey.py) to 3.1415...
 
+## Package creation 
+In order to create a new package, we used the next command (in the workspace folder):
+
+```bash
+catkin create pkg hello_turtle -m "Cristian Chitiva" "cychitivav@unal.edu.co" -m "Brayan Estupinan" "blestupinanp@unal.edu.co" -l "MIT" --catkin-deps rospy turtlesim 
+```
+
+> It is necessary have *catkin tools* installed in your system (`sudo apt install python3-catkin-tools`).
+
+This package depends on the turtlesim package, so we need to install it first (commonly is pre-installed with ROS Noetic), also is necessary have the rospy package installed to create python files for ROS. To install this dependencies you can use the following command (in the workspace folder):
+
+```bash
+rosdep install --from-paths src --ignore-src -y
+```
+
 ## MATLAB-ROS connection
 In the first part of the lab, the MATLAB ROS toolbox is used to become familiar with the connection between MATLAB and ROS. Initially a subscriber to the pose topic is created to view the current pose of the turtle (turtlesim package). Also, to implement MATLAB's connection to ROS services, the teleport_relative service is called to move the turtle to any position.
 
@@ -33,6 +48,11 @@ And finally, run this in MATLAB command window
 run matlab/matlab_ros_connection.m
 run matlab/matlab_rossubs.m
 run matlab/matlab_rossrv.m
+```
+or in the terminal
+
+```bash
+matlab -nosplash -nodesktop -r "run matlab/matlab_ros_connection.m, run matlab/matlab_rossubs.m, run matlab/matlab_rossrv.m"
 ```
 
 In the [matlab ros connector file](matlab/matlab_ros_connection.m) we created a script that connects MATLAB to ROS and create a publisher to send **Twist** message by the topic *cmd_vel*. The second script contains the code to create a subscriber to the topic *pose* and to get the current pose of the turtle(latest message). Finally, the third script contains the code to create a service client to call the service *teleport_absolute* and to send the message to move the turtle to a new position; in this script is the command *rosshutdown* to close the connection with ROS.
